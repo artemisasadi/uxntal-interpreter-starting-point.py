@@ -1,0 +1,14 @@
+programText = """
+|0100
+;array LDA
+;array #01 ADD LDA
+ADD
+;print JSR2
+BRK
+
+@print
+    #18 DEO
+JMP2r
+
+@array 11 22 33
+"""
