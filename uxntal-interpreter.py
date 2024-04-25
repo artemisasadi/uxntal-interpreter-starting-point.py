@@ -58,93 +58,58 @@ class Uxn:
     # First unused address, only used for verbose
     free = 0
 
-#!!DONE Complete the parser
-class T:
-    LIT = "LIT"
-    REF = "REF"
-    LABEL = "LABEL"
-    INSTR = "INSTR"
-    RAW = "RAW"
-
 def parseToken(tokenStr):
     if tokenStr[0] == '#':
-        valStr = tokenStr[1:]
-        val = int(valStr, 16)
-        if len(valStr) == 2:
-            return (T.LIT, val, 1)
+        valStr=tokenStr[1:]
+        val = int(valStr,16)
+        if len(valStr)==2:
+            return (T.LIT,val,1)
         else:
-            return (T.LIT, val, 2)
-    elif tokenStr[0] == '"':
-        chars = list(tokenStr[1:])
-        return list(map(lambda c: (T.LIT, ord(c), 1), chars))
+            return (T.LIT,val,2)
+    if tokenStr[0] == '"':
+        chars =list(tokenStr[1:])
+        return list(map(lambda c: (T.LIT, ord(c),1),chars))
     elif tokenStr[0] == ';':
         val = tokenStr[1:]
-        return (T.REF, val, 2)
+        return (T.REF,val,2)
+    elif tokenStr[0] == "," and tokenStr[1] == "&":
+        val = tokenStr[2:]
+        return (T.REF,val,1)
     elif tokenStr[0] == '@':
         val = tokenStr[1:]
-        return (T.LABEL, val)
+        return (T.LABEL,val)
+    elif tokenStr[0] == "&":
+        val = tokenStr[1:]
+        return (T.LABEL,val)
+    elif tokenStr == '|0100':
+        return (T.MAIN,)
+    elif tokenStr[0] == "|":
+        val = tokenStr[1:]
+        return (T.ADDR, val)
+    elif tokenStr[0] == "$":
+        val = tokenStr[1:]
+        return (T.PAD, val)
     elif tokenStr[0].isupper():
-        #! DONE Handle absolute padding (optional)
         if len(tokenStr) == 3:
-            return (T.INSTR, tokenStr[0:len(tokenStr)], 1, 0, 0)
+            return (T.INSTR,tokenStr[0:len(tokenStr)],1,0,0)
         elif len(tokenStr) == 4:
             if tokenStr[-1] == '2':
-                return (T.INSTR, tokenStr[0:len(tokenStr) - 1], 2, 0, 0)
+                return (T.INSTR,tokenStr[0:len(tokenStr)-1],2,0,0)
             elif tokenStr[-1] == 'r':
-                return (T.INSTR, tokenStr[0:len(tokenStr) - 1], 1, 1, 0)
+                return (T.INSTR,tokenStr[0:len(tokenStr)-1],1,1,0)
             elif tokenStr[-1] == 'k':
-                return (T.INSTR, tokenStr[0:len(tokenStr) - 1], 1, 0, 1)
+                return (T.INSTR,tokenStr[0:len(tokenStr)-1],1,0,1)
         elif len(tokenStr) == 5:
-            # !DONE Handle relative padding
-            # Order must be size:stack:keep
-            if tokenStr[len(tokenStr) - 2:len(tokenStr)] == '2r':
-                return (T.INSTR, tokenStr[0:len(tokenStr) - 2], 2, 1, 0)
-            elif tokenStr[len(tokenStr) - 2:len(tokenStr)] == '2k':
-                return (T.INSTR, tokenStr[0:len(tokenStr) - 2], 2, 0, 1)
-            elif tokenStr[len(tokenStr) - 2:len(tokenStr)] == 'rk':
-                return (T.INSTR, tokenStr[0:len(tokenStr) - 2], 1, 1, 1)
+            if tokenStr[len(tokenStr)-2:len(tokenStr)] == '2r':
+                return (T.INSTR,tokenStr[0:len(tokenStr)-2],2,1,0)
+            elif tokenStr[len(tokenStr)-2:len(tokenStr)] == '2k':
+                return (T.INSTR,tokenStr[0:len(tokenStr)-2],2,0,1)
+            elif tokenStr[len(tokenStr)-2:len(tokenStr)] == 'rk':
+                return (T.INSTR,tokenStr[0:len(tokenStr)-2],1,1,1)
         elif len(tokenStr) == 6:
-            return (T.INSTR, tokenStr[0:len(tokenStr) - 1], 2, 1, 1)
+            return (T.INSTR,tokenStr[0:len(tokenStr)-1],2,1,1)
     else:
-        # we assume this is a 'raw' byte or short
-        return (T.RAW, int(tokenStr, 16))
-
-# !DONE Test the parser
-token1 = parseToken("#10")
-print(token1)  # Output: ('LIT', 16, 1)
-
-token2 = parseToken('"abc"')
-print(token2)  # Output: [('LIT', 97, 1), ('LIT', 98, 1), ('LIT', 99, 1)]
-
-token3 = parseToken(";array")
-print(token3)  # Output: ('REF', 'array', 2)
-
-token4 = parseToken("@label")
-print(token4)  # Output: ('LABEL', 'label')
-
-token5 = parseToken("LD2")
-print(token5)  # Output: ('INSTR', 'LD', 2, 0, 0)
-
-token6 = parseToken("JSR2r")
-print(token6)  # Output: ('INSTR', 'JSR', 1, 1, 0)
-
-token7 = parseToken("ADC2k")
-print(token7)  # Output: ('INSTR', 'ADC', 1, 0, 1)
-
-token8 = parseToken("LDY2r")
-print(token8)  # Output: ('INSTR', 'LDY', 2, 1, 0)
-
-token9 = parseToken("STX2k")
-print(token9)  # Output: ('INSTR', 'STX', 2, 0, 1)
-
-token10 = parseToken("STA2rk")
-print(token10)  # Output: ('INSTR', 'STA', 1, 1, 1)
-
-token11 = parseToken("LDA2rk")
-print(token11)  # Output: ('INSTR', 'LDA', 2, 1, 1)
-
-token12 = parseToken("FF")
-print(token12)  # Output: ('RAW', 255)
+        return (T.RAW,int(tokenStr,16))
 
 
 # These are the actions related to the various Uxn instructions
@@ -217,19 +182,12 @@ def nip(rs, sz, uxn):  # a b -> b
 #!!DONE Implement ROT (look at `swap`)
 # Implement ROT (look at `swap`)
 def rot(rs, sz, uxn):  # a b c -> b c a
-    c = uxn.stacks[rs].pop()
-    b = uxn.stacks[rs].pop()
     a = uxn.stacks[rs].pop()
-    uxn.stacks[rs].append(b)
-    uxn.stacks[rs].append(c)
-    uxn.stacks[rs].append(a)
-#! def rot(rs,sz,uxn): # a b c -> b c a
     b = uxn.stacks[rs].pop()
     c = uxn.stacks[rs].pop()
-    a = uxn.stacks[rs].pop()
     uxn.stacks[rs].append(b)
-    uxn.stacks[rs].append(c)
     uxn.stacks[rs].append(a)
+    uxn.stacks[rs].append(c)
 
 def dup(rs,sz,uxn):
         a = uxn.stacks[rs][-1]
@@ -244,14 +202,14 @@ def add(args, sz, uxn):
     return args[0] + args[1]
 
 def sub(args, sz, uxn):
-    return args[0] - args[1]
+    return args[1] - args[0]
 
 def mul(args, sz, uxn):
     return args[0] * args[1]
 
 def div(args, sz, uxn):
     if args[1] != 0:
-        return args[0] / args[1]
+        return args[0] // args[1]
     else:
         print("Error: Division by zero")
         exit()
@@ -295,8 +253,8 @@ callInstr = {
     'LTH': (lth, 2, True),  # Less than
     'GTH': (gth, 2, True),  # Greater than
     #!!DONE Add POP, ROT
-    'POP': (pop, 1, True),  # Pop the top item from the stack
-    'ROT': (rot, 3, True)   # Rotate the top three items on the stack
+    'POP': (pop, 0, True),  # Pop the top item from the stack
+    'ROT': (rot, 0, True)   # Rotate the top three items on the stack
 }
 def executeInstr(token, uxn):
     _t, instr, sz, rs, keep = token
@@ -316,7 +274,7 @@ def executeInstr(token, uxn):
         for i in reversed(range(0, nArgs)):
             if keep == 0:
                 arg = uxn.stacks[rs].pop()
-                if arg[1] == 2 and sz == 1 and (instr != 'LDA' and instr != 'STA'):
+                if arg[1] == 2 and sz == 1 and (instr !='JCN' and instr != 'LDA' and instr != 'STA'):
                     if WW:
                         print("Warning: Args on stack for", instr, sz, "are of wrong size (short for byte)")
                     uxn.stacks[rs].append((arg[0] >> 8, sz))
@@ -344,7 +302,7 @@ def executeInstr(token, uxn):
         if hasRes:
             res = action(args, sz, uxn)
             if instr == 'EQU' or instr == 'NEQ' or instr == 'LTH' or instr == 'GTH':
-                uxn.stacks[rs].append((res, 1))
+                uxn.stacks[rs].append((res, sz))
             else:
                 uxn.stacks[rs].append((res, sz))
         else:
@@ -356,13 +314,38 @@ def executeInstr(token, uxn):
 #! `tokenStrings` is a list of all tokens as strings
 
 # Define the stripComments function to remove comments from the program text
+# def stripComments(programText):
+#     lines = programText.split('\n')
+#     result = []
+#     for line in lines:
+#         if '(' in line:
+#             splitline = line.split(" ")
+#             print(line)
+#             nextline = line.split('(')[0].strip()  # Remove everything after the first semicolon
+#             if " " in nextline:
+#                 print(nextline.split(), "next")
+#             if nextline != "":
+#                 nextline.split()
+#                 result.append(nextline)
+#         print(result, "rrr")
+#     return '\n'.join(result)
+
 def stripComments(programText):
     lines = programText.split('\n')
     result = []
     for line in lines:
-        if ';' in line:
-            line = line.split(';')[0].strip()  # Remove everything after the first semicolon
-        result.append(line)
+        if '(' in line and line != "":
+            nextline = line.split('(')[0].strip()
+            if " " not in nextline:
+                result.append(nextline)
+            elif nextline != "":
+                nextline.split()
+                for token in nextline.split():
+                    result.append(token)
+        elif ")" in line:
+            continue
+        elif line != "":
+            result.append(line)
     return '\n'.join(result)
 
 # Define the tokeniseProgramText function to tokenize the program text
@@ -380,9 +363,9 @@ def populateMemoryAndBuildSymbolTable(tokens,uxn):
         if token == (T.MAIN,):
             pc = 0x0100
         elif token[0] == T.ADDR:
-            pc = token[1]
+            pc = int(token[1])
         elif token[0] == T.PAD: # relative only
-            pc = pc + token[1]
+            pc = pc + int(token[1])
         elif token[0] == T.LABEL:
             labelName = token[1]
             uxn.symbolTable[labelName]=pc
@@ -404,7 +387,7 @@ def resolveSymbols(uxn):
             if label in uxn.symbolTable:
                 address = uxn.symbolTable[label]
                 # Replace the REF token with a LIT token containing the address
-                uxn.memory[i] = (T.LIT, address)
+                uxn.memory[i] = (T.LIT, address, token[2])
             else:
                 print("Error: Undefined label '{}'".format(label))
                 exit()
@@ -419,7 +402,7 @@ def runProgram(uxn):
             print('PC:', uxn.progCounter, ' TOKEN:', token)
         if token[0] == T.LIT:
             # If the token is a literal, its value goes on the working stack
-            uxn.stacks[0].append(token[1])
+            uxn.stacks[0].append(token[1:])
         elif token[0] == T.INSTR:
             # If it's an instruction, execute it
             executeInstr(token, uxn)
